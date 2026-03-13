@@ -85,12 +85,23 @@
 };
 
 &gpio5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_gpio5_io05_test>;
+	reset-test-hog {
+		gpio-hog;
+		gpios = <5 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "RESET_TEST_GPIO5_IO05";
+	};
+
+};
+&gpio5 {
 	gpio-line-names = "SODIMM_42",
 			  "SODIMM_46",
 			  "SODIMM_187",
 			  "SODIMM_20",
 			  "SODIMM_22",
-			  "SODIMM_15",
+			  //"SODIMM_15",
 			  "SODIMM_196",
 			  "SODIMM_200",
 			  "SODIMM_198",
@@ -117,10 +128,13 @@
 			  "SODIMM_153";
 };
 
+&pwm1 {
+	status = "disabled"; //RG Disabled to be able to test using this as the reset for the 3.5" LCD on the Rev 2 devboard.
+};
+
 &mix_gpu_ml {
 	status="okay";
 };
-
 
 &iomuxc {
 	pinctrl-names = "default";
@@ -129,6 +143,10 @@
 		    <&pinctrl_gpio7>, <&pinctrl_gpio8>,
 		    <&pinctrl_gpio_hog1>, <&pinctrl_gpio_hog2>, <&pinctrl_gpio_hog3>,
 		    <&pinctrl_hdmi_hog>;
+	pinctrl_gpio5_io05_test: gpio5io05testgrp {
+	   fsl,pins = 
+		<MX8MP_IOMUXC_SPDIF_EXT_CLK__GPIO5_IO05  0x1c4>;
+	};
 };
 
 /* On-module Bluetooth */
@@ -207,6 +225,8 @@
     ports {
       port@1 {
          reg = <1>;
+         #address-cells = <1>;
+	 #size-cells = <0>;
          mipi_dsi_out: endpoint {
            remote-endpoint = <&panel_in_dsi>;
          };
@@ -219,7 +239,8 @@
         reg = <0>;
         dsi-lanes = <2>;
         video-mode = <2>;
-        reset-gpios = <&gpio4 28 GPIO_ACTIVE_HIGH>;
+        //reset-gpios = <&gpio4 28 GPIO_ACTIVE_HIGH>;
+//        reset-gpios = <&gpio5 5 GPIO_ACTIVE_HIGH>;
         backlight = <&backlight>;
         status = "okay";
         port {
