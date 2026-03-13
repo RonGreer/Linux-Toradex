@@ -212,7 +212,7 @@
         reg = <0>;
         dsi-lanes = <2>;
         video-mode = <2>;
-//       reset-gpios = <&gpio4 28 GPIO_ACTIVE_HIGH>;
+       reset-gpios = <&gpio4 28 GPIO_ACTIVE_HIGH>;
         backlight = <&backlight>;
         status = "okay";
 
