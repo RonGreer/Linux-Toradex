@@ -341,24 +341,55 @@ static const struct st7703_panel_desc xbd599_desc = {
 	.init_sequence = xbd599_init_sequence,
 };
 
-static int fl7703_init_sequence(struct st7703 *ctx)
+static int fl7703ni_read_id(struct st7703 *ctx)
+{
+    u8 id1, id2, id3;
+    int ret;
+    struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
+
+    ret = mipi_dsi_dcs_read(dsi, 0xDA, &id1, 1);
+    if (ret < 0) {
+        dev_err(ctx->dev, "LMI: could not read ID1 11\n");
+        return ret;
+    }
+
+    ret = mipi_dsi_dcs_read(dsi, 0xDB, &id2, 1);
+    if (ret < 0) {
+        dev_err(ctx->dev, "LMI: could not read ID2 22\n");
+        return ret;
+    }
+
+    ret = mipi_dsi_dcs_read(dsi, 0xDC, &id3, 1);
+    if (ret < 0) {
+        dev_err(ctx->dev, "LMI: could not read ID3\n");
+        return ret;
+    }
+
+    dev_info(ctx->dev,
+        "LMI: manufacturer: %02x version: %02x driver: %02x\n",
+        id1, id2, id3);
+
+    return 0;
+}
+
+static int nhd640480ef_init_sequence(struct st7703 *ctx)
 {
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
+	msleep(50);
 printk("[DEBUG] InST7703 init_sequence\n");
+	fl7703ni_read_id(ctx);
 	/*
 	 * Init sequence was supplied by the panel vendor.
 	 */
-
+	dev_err(ctx->dev, "NHD640480EF_MSXP Init sequence\n");
 	/* Magic sequence to unlock user commands below. */
 	mipi_dsi_dcs_write_seq(dsi, ST7703_CMD_SETEXTC, 0xF1, 0x12, 0x87);
    /* Set display resolution. */
-        mipi_dsi_dcs_write_seq(dsi, MIPI_DCS_SOFT_RESET, 0x00);
-        msleep(80); 
+
 	mipi_dsi_dcs_write_seq(dsi, ST7703_CMD_SETDISP,
 			       0x78, /* NL = 120 - 1024Gate(480+136+4+0) */
 			       0x14, //600RGB
 			       0x70  );
-				   
 	/* RGB I/F porch timing */
 	mipi_dsi_dcs_write_seq(dsi, ST7703_CMD_SETRGBIF,
 			       0x10, /* VBP_RGB_GEN */  
@@ -389,11 +420,37 @@ printk("[DEBUG] InST7703 init_sequence\n");
 	
 	mipi_dsi_dcs_write_seq(dsi, ST7703_CMD_SETMIPI,
 			       0x31, /* VC_main = 0, Lane_Number = 1 (2 lanes) */
-				   0x61,
-				   0x06,
+				   0x81,
+				   0x05,
 				   0xF9,
-				   0xFF,
-				   0x0A );
+				   0x0E,
+				   0x0E,
+				   0x20,
+				   0x00,
+				   0x00,
+				   0x00,
+				   0x00,
+				   0x00,
+				   0x00,
+				   0x00,
+				   0x44,
+				   0x25,
+				   0x00,
+				   0x91,
+				   0x0a,
+				   0x00,
+				   0x00,
+				   0x01,
+				   0x4f,
+				   0x01,
+				   0x00,
+				   0x00,
+				   0x37);
+//				   0x61,
+//				   0x06,
+//				   0xF9,
+//				   0xFF,
+//				   0x0A );
 			       //0x81, /* DSI_LDO_SEL = 1.7V, RTERM = 90 Ohm */
 			       //0x05, /* */
 			       //0xF9, /* TX_CLK_SEL = fDSICLK/16 */
@@ -469,7 +526,14 @@ printk("[DEBUG] InST7703 init_sequence\n");
 				   0x05, 0x0A, 0x0C, 0x10, 0x13, 0x10, 0x13, 0x12,
 				   0x1A, 0x00, 0x05, 0x09, 0x29, 0x3C, 0x3F, 0x3B,
 				   0x37, 0x05, 0x0A, 0x0C, 0x10, 0x13, 0x10, 0x13,
-				   0x12, 0x1A );
+				   0x12, 0x1A );		   
+				   
+	mipi_dsi_dcs_write_seq(dsi, 0xE1, 0x11, 0x11, 0x91, 0x00, 0x00, 0x00, 0x00 ); //0xE1 dylan, only FN7703?
+	
+				   
+//        mipi_dsi_dcs_write_seq(dsi, MIPI_DCS_SOFT_RESET, 0x00);
+//        msleep(80); 
+				   
 
 	mipi_dsi_dcs_write_seq(dsi, ST7703_CMD_SETEQ,
 			       0x07, //1  PNOEQ 03                      
@@ -619,34 +683,34 @@ printk("[DEBUG] InST7703 init_sequence\n");
 
 	mipi_dsi_dcs_write_seq(dsi, ST7703_CMD_UNKNOWN_EF, 0xff, 0xff, 0x01);
 
-	msleep(20);
-
+	msleep(50);
+	dev_err(ctx->dev, "NHD640480EF_init_sequence complete!\n");
 	return 0;
 }
-static const struct drm_display_mode fl7703_mode = {
+static const struct drm_display_mode nhd640480ef_mode = {
 	.hdisplay	= 640,
-	.hsync_start	= 640 + 40,
-	.hsync_end	= 640 + 40 + 2,
-	.htotal		= 640 + 40 + 2 + 80,
+	.hsync_start	= 640 + 120,
+	.hsync_end	= 640 + 120 + 120,
+	.htotal		= 640 + 120 + 120 + 120,
 	.vdisplay	= 480,
-	.vsync_start	= 480 + 18,
-	.vsync_end	= 480 + 18 + 2,
-	.vtotal		= 480 + 18 + 2 + 28,
-	.clock		= 24150,
-	//.flags		= DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
-        .type		= DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
-	.width_mm	= 70,
-	.height_mm	= 53,
+	.vsync_start	= 480 + 25,
+	.vsync_end	= 480 + 25 + 5,
+	.vtotal		= 480 + 25 + 5 + 12,
+	.clock		= 31200,
+	.flags		= DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
+//        .type		= DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
+	.width_mm	= 56,
+	.height_mm	= 78,
 };
 
-static const struct st7703_panel_desc fl7703_desc = {
-	.mode = &fl7703_mode,
+static const struct st7703_panel_desc nhd640480ef_desc = {
+	.mode = &nhd640480ef_mode,
 	.lanes = 2,
 	//.mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE,
-	.mode_flags = MIPI_DSI_MODE_VIDEO_BURST |
+	.mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST |
 		      MIPI_DSI_MODE_NO_EOT_PACKET | MIPI_DSI_MODE_LPM,
 	.format = MIPI_DSI_FMT_RGB888,
-	.init_sequence = fl7703_init_sequence,
+	.init_sequence = nhd640480ef_init_sequence, //fl7703_init_sequence,
 };
 
 static int rg353v2_init_sequence(struct st7703 *ctx)
@@ -1005,7 +1069,7 @@ static const struct of_device_id st7703_of_match[] = {
 	{ .compatible = "anbernic,rg353v-panel-v2", .data = &rg353v2_desc },
 	{ .compatible = "rocktech,jh057n00900", .data = &jh057n00900_panel_desc },
 	{ .compatible = "xingbangda,xbd599", .data = &xbd599_desc },
-	{ .compatible = "forcelead,fl7703", .data = &fl7703_desc },
+	{ .compatible = "forcelead,fl7703", .data = &nhd640480ef_desc },
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, st7703_of_match);
